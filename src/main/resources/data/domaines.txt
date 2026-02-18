@@ -1,0 +1,4 @@
+1;General;Domaine général pour tous les fichiers;-1;1;10737418240;0;2026-02-13 00:00:00;true
+2;Documents;Documents texte et PDF;1;1;5368709120;0;2026-02-13 00:00:00;true
+3;Images;Photos et images;1;1;5368709120;0;2026-02-13 00:00:00;true
+4;Videos;Fichiers vidéo;1;1;21474836480;0;2026-02-13 00:00:00;true

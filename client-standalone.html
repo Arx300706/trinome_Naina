@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Cloud Distribué</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    header p {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+    
+    .upload-area {
+      border: 3px dashed #667eea;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: #f8f9ff;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    
+    .upload-area:hover {
+      border-color: #764ba2;
+      background: #f0f2ff;
+    }
+    
+    .upload-area.dragover {
+      border-color: #764ba2;
+      background: #e8ebff;
+      transform: scale(1.02);
+    }
+    
+    .upload-area p {
+      margin: 5px 0;
+      color: #666;
+    }
+    
+    .upload-area .big {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    
+    input[type="file"] {
+      display: none;
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: all 0.3s;
+      width: 100%;
+      margin-top: 15px;
+    }
+    
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-small {
+      padding: 8px 12px;
+      font-size: 0.9em;
+      margin: 0;
+      width: auto;
+    }
+    
+    .status {
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 6px;
+      display: none;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+    
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      display: block;
+    }
+    
+    .file-list {
+      max-height: 400px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .file-item {
+      padding: 12px;
+      background: #f8f9ff;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .file-info {
+      flex: 1;
+    }
+    
+    .file-name {
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .file-size {
+      color: #999;
+      font-size: 0.9em;
+    }
+    
+    .cluster-status {
+      padding: 15px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+    
+    .cluster-online { color: #00aa00; }
+    .cluster-offline { color: #aa0000; }
+    
+    .settings {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    
+    .settings input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 10px;
+      font-family: monospace;
+    }
+    
+    .settings button {
+      padding: 8px 16px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>☁️ Client Cloud Distribué</h1>
+      <p>Connectez-vous à un cloud résilient avec répression automatique</p>
+    </header>
+    
+    <div class="settings">
+      <label>Serveur: 
+        <input type="text" id="serverUrl" value="http://10.134.17.222:8080" placeholder="">
+        <button onclick="updateServer()">Connecter</button>
+      </label>
+      <div id="connectionStatus" style="margin-top: 10px; font-size: 0.9em;"></div>
+    </div>
+    
+    <div class="grid">
+      <!-- Colonne 1: Upload -->
+      <div class="card">
+        <h2>📤 Upload</h2>
+        <div class="upload-area" id="uploadArea">
+          <div class="big">📁</div>
+          <p><strong>Glissez un fichier ici</strong></p>
+          <p style="color: #999; font-size: 0.9em;">ou cliquez pour sélectionner</p>
+        </div>
+        
+        <div id="fileInfo" style="margin-top: 15px; display: none;">
+          <p><strong>Fichier:</strong> <span id="fileName"></span></p>
+          <p><strong>Taille:</strong> <span id="fileSize"></span></p>
+        </div>
+        
+        <button class="btn" id="uploadBtn" style="display: none;">Uploader</button>
+        <div id="uploadStatus" class="status"></div>
+      </div>
+      
+      <!-- Colonne 2: Fichiers -->
+      <div class="card">
+        <h2>📥 Fichiers</h2>
+        <button class="btn" onclick="refreshFiles()">🔄 Actualiser</button>
+        <div class="file-list" id="fileList">
+          <p style="text-align: center; color: #999; padding: 20px;">Cliquez sur Actualiser...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Ligne complète: Cluster Status -->
+    <div class="card">
+      <h2>🖥️ État du Cluster</h2>
+      <button class="btn" onclick="getClusterStatus()">Vérifier l'état</button>
+      <div class="cluster-status" id="clusterStatus">
+        <p>Cliquez sur "Vérifier l'état" pour voir le statut...</p>
+      </div>
+    </div>
+  </div>
+  
+  <input type="file" id="fileInput">
+  
+  <script>
+    let SERVER_URL = localStorage.getItem('cloudServerUrl') || 'http://10.134.17.222:8080';
+    const USER_ID = 'user_' + Math.random().toString(36).substr(2, 9);
+    let selectedFile = null;
+    
+    // Restore server URL
+    document.getElementById('serverUrl').value = SERVER_URL;
+    
+    function updateServer() {
+      SERVER_URL = document.getElementById('serverUrl').value;
+      if (!SERVER_URL.startsWith('http')) {
+        SERVER_URL = 'http://' + SERVER_URL;
+      }
+      localStorage.setItem('cloudServerUrl', SERVER_URL);
+      testConnection();
+    }
+    
+    async function testConnection() {
+      try {
+        const response = await fetch(SERVER_URL + '/api/files');
+        if (response.ok) {
+          document.getElementById('connectionStatus').textContent = '✓ Connecté au serveur';
+          document.getElementById('connectionStatus').style.color = '#00aa00';
+        }
+      } catch (e) {
+        document.getElementById('connectionStatus').textContent = '✗ Serveur non accessible';
+        document.getElementById('connectionStatus').style.color = '#ff6b6b';
+      }
+    }
+    
+    // Upload functionality
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    uploadArea.onclick = () => fileInput.click();
+    
+    uploadArea.ondragover = (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    };
+    
+    uploadArea.ondragleave = () => uploadArea.classList.remove('dragover');
+    
+    uploadArea.ondrop = (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      handleFile(e.dataTransfer.files[0]);
+    };
+    
+    fileInput.onchange = (e) => handleFile(e.target.files[0]);
+    
+    function handleFile(file) {
+      if (!file) return;
+      selectedFile = file;
+      document.getElementById('fileInfo').style.display = 'block';
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = formatSize(file.size);
+      uploadBtn.style.display = 'block';
+    }
+    
+    uploadBtn.onclick = async () => {
+      if (!selectedFile) return;
+      uploadBtn.disabled = true;
+      showStatus('uploadStatus', 'info', 'Upload en cours...');
+      
+      try {
+        const url = SERVER_URL + '/api/upload?fileName=' + encodeURIComponent(selectedFile.name) + '&userId=' + USER_ID;
+        const response = await fetch(url, { method: 'POST', body: selectedFile });
+        const data = await response.json();
+        
+        if (response.ok) {
+          showStatus('uploadStatus', 'success', '✓ Fichier distribué sur 3 serveurs');
+          selectedFile = null;
+          document.getElementById('fileInfo').style.display = 'none';
+          uploadBtn.style.display = 'none';
+          fileInput.value = '';
+          setTimeout(refreshFiles, 1000);
+        } else {
+          showStatus('uploadStatus', 'error', '✗ Erreur: ' + (data.error || 'Serveur'));
+        }
+      } catch (e) {
+        showStatus('uploadStatus', 'error', '✗ Erreur: ' + e.message);
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    };
+    
+    async function refreshFiles() {
+      try {
+        const response = await fetch(SERVER_URL + '/api/files');
+        const files = await response.json();
+        const fileList = document.getElementById('fileList');
+        
+        if (files.length === 0) {
+          fileList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Aucun fichier</p>';
+          return;
+        }
+        
+        fileList.innerHTML = files.map(f => `
+          <div class="file-item">
+            <div class="file-info">
+              <div class="file-name">📄 ${escapeHtml(f.fileName)}</div>
+              <div class="file-size">${formatSize(f.totalSize)} • ${f.chunks} chunks</div>
+            </div>
+            <button class="btn btn-small" onclick="downloadFile('${escapeHtml(f.fileName)}')">⬇️ DL</button>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('fileList').innerHTML = '<p style="color: red;">Erreur: ' + e.message + '</p>';
+      }
+    }
+    
+    async function downloadFile(fileName) {
+      try {
+        const url = SERVER_URL + '/api/download?fileName=' + encodeURIComponent(fileName) + '&userId=' + USER_ID;
+        const response = await fetch(url);
+        const blob = await response.blob();
+        
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        alert('Erreur download: ' + e.message);
+      }
+    }
+    
+    async function getClusterStatus() {
+      try {
+        const response = await fetch(SERVER_URL + '/api/cluster');
+        const status = await response.text();
+        
+        const html = status.split('\n').map(line => {
+          if (line.includes('UP')) {
+            return '<div class="cluster-online">' + escapeHtml(line) + '</div>';
+          } else if (line.includes('DOWN')) {
+            return '<div class="cluster-offline">' + escapeHtml(line) + '</div>';
+          }
+          return '<div>' + escapeHtml(line) + '</div>';
+        }).join('');
+        
+        document.getElementById('clusterStatus').innerHTML = html;
+      } catch (e) {
+        document.getElementById('clusterStatus').innerHTML = '<p style="color: red;">Erreur: ' + e.message + '</p>';
+      }
+    }
+    
+    function formatSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+    
+    function showStatus(id, type, msg) {
+      const el = document.getElementById(id);
+      el.className = 'status ' + type;
+      el.textContent = msg;
+    }
+    
+    // Initial checks
+    testConnection();
+    refreshFiles();
+    setInterval(refreshFiles, 30000);
+  </script>
+</body>
+</html>

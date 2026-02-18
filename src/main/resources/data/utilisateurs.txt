@@ -1,0 +1,5 @@
+1;Admin;admin@datastockage.com;admin123;admin;ADMIN;10737418240;0;2026-02-13 00:00:00;true
+84;Hasina;hasina@gmail.com;hasina;hasina;CLIENT;1073741824;0;2026-02-13 00:00:00;true
+3264;Jimmy;jimmy@gmail.com;jimmy;jimmy;CLIENT;1073741824;295070;2026-02-13 00:00:00;true
+1459;Randria;Jimmyrandia@gmail.com;12345678;randria;CLIENT;1073741824;0;2026-02-13 00:00:00;true
+3265;Armando;Armando@gmail.com;123123;armando;CLIENT;1073741824;534;2026-02-13 08:53:11;true

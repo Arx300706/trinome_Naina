@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Distribué - Système de Stockage</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-area p {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .upload-area small {
+            color: #999;
+            display: block;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #764ba2;
+        }
+
+        .file-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9ff;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-item-info {
+            flex: 1;
+        }
+
+        .file-item-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .file-item-size {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .file-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            background: #667eea;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .cluster-status {
+            margin-top: 30px;
+        }
+
+        .cluster-status h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .osd-item {
+            padding: 12px;
+            background: #f8f9ff;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .status-badge.up {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.down {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #eee;
+            border-radius: 12px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☁️ Cloud Distribué</h1>
+            <p>Système de Stockage Résilient et Décentralisé</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Section Upload -->
+            <div class="card">
+                <h2>📤 Télécharger un fichier</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <p>🎯 Glissez votre fichier ici</p>
+                    <small>ou cliquez pour sélectionner</small>
+                </div>
+                
+                <input type="file" id="fileInput" />
+                
+                <div id="uploadStatus" class="status"></div>
+                
+                <div id="progressContainer" style="display: none;">
+                    <p>Progression du téléchargement:</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill">0%</div>
+                    </div>
+                </div>
+
+                <button class="btn" id="uploadBtn" style="display: none; width: 100%;">
+                    ✓ Valider l'upload
+                </button>
+
+                <div id="fileInfo" style="margin-top: 15px; display: none;">
+                    <p><strong>Fichier sélectionné:</strong> <span id="selectedFileName"></span></p>
+                    <p><strong>Taille:</strong> <span id="selectedFileSize"></span></p>
+                </div>
+            </div>
+
+            <!-- Section Fichiers -->
+            <div class="card">
+                <h2>📁 Fichiers stockés</h2>
+                
+                <button class="btn btn-secondary" id="refreshBtn" style="width: 100%;">
+                    🔄 Actualiser la liste
+                </button>
+
+                <div id="filesStatus" class="status"></div>
+
+                <div class="file-list" id="fileList">
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        Cliquez sur "Actualiser" pour voir les fichiers...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Cluster Status -->
+        <div class="card cluster-status">
+            <h2>🔗 État du Cluster</h2>
+            
+            <button class="btn btn-secondary" id="clusterBtn" style="width: 100%;">
+                🔍 Vérifier l'état
+            </button>
+
+            <div id="clusterStatus" style="margin-top: 15px; min-height: 100px;">
+                <div style="text-align: center; padding: 20px; color: #999;">
+                    Les serveurs OSD apparaîtront ici...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://10.134.17.222:8080/api';
+        const CURRENT_USER_ID = 'user_' + Math.random().toString(36).substr(2, 9);
+        
+        let selectedFile = null;
+
+        // ═══════════════════════════════════════════════════════════════
+        // UPLOAD
+        // ═══════════════════════════════════════════════════════════════
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFileSelect(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFileSelect(e.target.files[0]);
+        });
+
+        function handleFileSelect(file) {
+            if (!file) return;
+
+            selectedFile = file;
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('selectedFileName').textContent = file.name;
+            document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
+            uploadBtn.style.display = 'block';
+        }
+
+        uploadBtn.addEventListener('click', uploadFile);
+
+        async function uploadFile() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            const url = `${API_BASE}/upload?fileName=${encodeURIComponent(selectedFile.name)}&userId=${CURRENT_USER_ID}`;
+
+            try {
+                uploadBtn.disabled = true;
+                document.getElementById('progressContainer').style.display = 'block';
+                showStatus('info', '📤 Envoi du fichier en cours...');
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: selectedFile
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('success', '✓ ' + data.message);
+                    selectedFile = null;
+                    fileInput.value = '';
+                    document.getElementById('fileInfo').style.display = 'none';
+                    uploadBtn.style.display = 'none';
+                    document.getElementById('progressContainer').style.display = 'none';
+                    setTimeout(() => refreshFileList(), 1000);
+                } else {
+                    showStatus('error', '✗ Erreur lors de l\'upload');
+                }
+            } catch (error) {
+                showStatus('error', '✗ Erreur: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // FICHIERS
+        // ═══════════════════════════════════════════════════════════════
+
+        document.getElementById('refreshBtn').addEventListener('click', refreshFileList);
+
+        async function refreshFileList() {
+            try {
+                document.getElementById('filesStatus').className = 'status info';
+                document.getElementById('filesStatus').textContent = '⏳ Chargement des fichiers...';
+
+                const response = await fetch(`${API_BASE}/files`);
+                if (!response.ok) throw new Error('Erreur réseau');
+
+                const files = await response.json();
+                renderFileList(files);
+                document.getElementById('filesStatus').style.display = 'none';
+            } catch (error) {
+                showStatus('error', '✗ Erreur: ' + error.message, 'filesStatus');
+            }
+        }
+
+        function renderFileList(files) {
+            const fileList = document.getElementById('fileList');
+            
+            if (files.length === 0) {
+                fileList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Aucun fichier stocké</div>';
+                return;
+            }
+
+            fileList.innerHTML = files.map(file => `
+                <div class="file-item">
+                    <div class="file-item-info">
+                        <div class="file-item-name">📄 ${escapeHtml(file.fileName)}</div>
+                        <div class="file-item-size">
+                            Taille: ${formatFileSize(file.totalSize)} | Chunks: ${file.chunks}
+                        </div>
+                    </div>
+                    <div class="file-item-actions">
+                        <button class="btn btn-small" onclick="downloadFile('${escapeHtml(file.fileName)}')">
+                            ⬇️ Télécharger
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function downloadFile(fileName) {
+            try {
+                const url = `${API_BASE}/download?fileName=${encodeURIComponent(fileName)}&userId=${CURRENT_USER_ID}`;
+                const response = await fetch(url);
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const a = document.createElement('a');
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    a.href = blobUrl;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(blobUrl);
+                    document.body.removeChild(a);
+                    showStatus('success', '✓ Fichier téléchargé: ' + fileName);
+                } else {
+                    showStatus('error', '✗ Impossible de télécharger le fichier');
+                }
+            } catch (error) {
+                showStatus('error', '✗ Erreur: ' + error.message);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // CLUSTER STATUS
+        // ═══════════════════════════════════════════════════════════════
+
+        document.getElementById('clusterBtn').addEventListener('click', loadClusterStatus);
+
+        async function loadClusterStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/cluster`);
+                if (!response.ok) throw new Error('Erreur réseau');
+
+                const statusText = await response.json();
+                renderClusterStatus(statusText);
+            } catch (error) {
+                document.getElementById('clusterStatus').innerHTML = 
+                    `<div class="status error">✗ Erreur: ${error.message}</div>`;
+            }
+        }
+
+        function renderClusterStatus(statusText) {
+            const lines = statusText.split('\n').filter(l => l.trim());
+            
+            if (lines.length === 0) {
+                document.getElementById('clusterStatus').innerHTML = 
+                    '<div style="text-align: center; padding: 20px; color: #999;">Aucun serveur actif</div>';
+                return;
+            }
+
+            const html = lines.map(line => {
+                const parts = line.split('|');
+                if (parts.length < 2) return '';
+                
+                const osdId = parts[0].trim();
+                const status = parts[1].trim();
+                const address = parts[2]?.trim() || 'unknown';
+                
+                const badgeClass = status === 'UP' ? 'up' : 'down';
+                const icon = status === 'UP' ? '✓' : '✗';
+                
+                return `
+                    <div class="osd-item">
+                        <div>
+                            <strong>${osdId}</strong>
+                            <div style="color: #666; font-size: 0.9em;">${address}</div>
+                        </div>
+                        <span class="status-badge ${badgeClass}">${icon} ${status}</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('clusterStatus').innerHTML = html;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // UTILITAIRES
+        // ═══════════════════════════════════════════════════════════════
+
+        function showStatus(type, message, elementId = 'uploadStatus') {
+            const element = document.getElementById(elementId);
+            element.className = 'status ' + type;
+            element.textContent = message;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Charger la liste au démarrage
+        refreshFileList();
+        loadClusterStatus();
+
+        // Actualiser tous les 30 secondes
+        setInterval(() => {
+            refreshFileList();
+            loadClusterStatus();
+        }, 30000);
+    </script>
+</body>
+</html>

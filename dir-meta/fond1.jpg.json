@@ -1,0 +1,9 @@
+{
+  "fileName": "fond1.jpg",
+  "ownerId": "3264",
+  "totalSize": 446794,
+  "chunkIds": ["3264_5cafcc32-210c-4e59-9d80-08fbd6d9a4c3"],
+  "chunkLocations": {
+    "3264_5cafcc32-210c-4e59-9d80-08fbd6d9a4c3": ["osd-9004","osd-9001","osd-9002"]
+  }
+}
